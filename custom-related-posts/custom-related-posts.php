@@ -3,13 +3,13 @@
 Plugin Name: Custom Related Posts
 Plugin URI: http://bootstrapped.ventures
 Description: Manually define related posts for any custom post type
-Version: 1.7.2
+Version: 1.7.3
 Author: Bootstrapped Ventures
 Author URI: http://bootstrapped.ventures
 Text Domain: custom-related-posts
 License: GPLv3
 */
-define( 'CRP_VERSION', '1.7.2' );
+define( 'CRP_VERSION', '1.7.3' );
 
 class CustomRelatedPosts {
 
@@ -97,11 +97,7 @@ class CustomRelatedPosts {
 
         // Load textdomain
         if( !self::is_premium_active() ) {
-            $domain = 'custom-related-posts';
-            $locale = apply_filters( 'plugin_locale', get_locale(), $domain );
-
-            load_textdomain( $domain, WP_LANG_DIR.'/'.$domain.'/'.$domain.'-'.$locale.'.mo' );
-            load_plugin_textdomain( $domain, false, $this->corePath . '/lang/' );
+            add_action( 'init', array( $this, 'load_textdomain' ) );
         }
 
         // Add core helper directory
@@ -137,6 +133,11 @@ class CustomRelatedPosts {
 
         // Load default assets
         $this->helper( 'assets' );
+    }
+
+    public function load_textdomain()
+    {
+        load_plugin_textdomain( 'custom-related-posts', false, $this->corePath . '/lang/' );
     }
 
     /**
@@ -206,10 +207,10 @@ class CustomRelatedPosts {
         return $this->helper( 'relations' )->get_from( $post_id );
     }
 
-	public function relations_to( $post_id )
-	{
-		return $this->helper( 'relations' )->get_to( $post_id );
-	}
+    public function relations_to( $post_id )
+    {
+        return $this->helper( 'relations' )->get_to( $post_id );
+    }
 }
 
 // Premium version is responsible for instantiating if available
