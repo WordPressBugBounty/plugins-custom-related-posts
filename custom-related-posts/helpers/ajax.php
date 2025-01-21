@@ -46,6 +46,7 @@ class CRP_Ajax {
                 'posts_per_page' => intval( CustomRelatedPosts::setting( 'search_number_of_posts' ) ),
                 'orderby' => 'date',
                 'order' => 'DESC',
+                'perm' => 'readable', // Only return posts the current user can read,
             );
 
             $args = apply_filters( 'crp_search_args', $args );
@@ -96,10 +97,12 @@ class CRP_Ajax {
             $base_id = intval( $_POST['base'] );
             $target_id = intval( $_POST['target'] );
 
-            $from = $_POST['from'] == 'true' ? true : false;
-            $to = $_POST['to'] == 'true' ? true : false;
+            if ( current_user_can( 'edit_post', $base_id ) ) {
+                $from = $_POST['from'] == 'true' ? true : false;
+                $to = $_POST['to'] == 'true' ? true : false;
 
-            CustomRelatedPosts::get()->helper( 'relations' )->add_relation( $base_id, $target_id, $from, $to );
+                CustomRelatedPosts::get()->helper( 'relations' )->add_relation( $base_id, $target_id, $from, $to );
+            }
         }
 
         die();
@@ -112,10 +115,12 @@ class CRP_Ajax {
             $base_id = intval( $_POST['base'] );
             $target_id = intval( $_POST['target'] );
 
-            $from = $_POST['from'] == 'true' ? true : false;
-            $to = $_POST['to'] == 'true' ? true : false;
+            if ( current_user_can( 'edit_post', $base_id ) ) {
+                $from = $_POST['from'] == 'true' ? true : false;
+                $to = $_POST['to'] == 'true' ? true : false;
 
-            CustomRelatedPosts::get()->helper( 'relations' )->remove_relation( $base_id, $target_id, $from, $to );
+                CustomRelatedPosts::get()->helper( 'relations' )->remove_relation( $base_id, $target_id, $from, $to );
+            }
         }
 
         die();

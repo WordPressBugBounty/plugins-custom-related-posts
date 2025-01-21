@@ -133,6 +133,7 @@ class CRP_Api {
             'posts_per_page' => intval( CustomRelatedPosts::setting( 'search_number_of_posts' ) ),
             'orderby' => 'date',
             'order' => 'DESC',
+            'perm' => 'readable', // Only return posts the current user can read,
         );
 
         $args = apply_filters( 'crp_search_args', $args );

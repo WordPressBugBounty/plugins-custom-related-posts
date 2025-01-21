@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: related posts, manual related posts, widget, custom post type
 Requires at least: 3.5
 Tested up to: 6.7
-Stable tag: 1.7.3
+Stable tag: 1.7.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,8 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 2. Add relations by searching for posts
 
 == Changelog ==
+= 1.7.4 =
+* Fix: Restrict AJAX access to prevent misuse by contributors
 
 = 1.7.3 =
 * Fix: Notice due to incorrect textdomain loading
@@ -117,6 +119,9 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 * Very first version of this plugin
 
 == Upgrade notice ==
+= 1.7.4 =
+Update to prevent potential misuse of relations by contributors
+
 = 1.7.3 =
 Update to prevent PHP notice
 
