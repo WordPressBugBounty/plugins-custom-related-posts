@@ -20,6 +20,12 @@ class CRP_Output {
             ), $args
         );
 
+        // Sanitize arguments.
+        $args['title'] = sanitize_text_field( $args['title'] );
+        $args['order_by'] = sanitize_key( $args['order_by'] );
+        $args['order'] = strtoupper( sanitize_key( $args['order'] ) );
+        $args['none_text'] = sanitize_text_field( $args['none_text'] );
+
         $relations = CustomRelatedPosts::get()->relations_to( $post_id );
 
         // Sort relations
@@ -46,11 +52,11 @@ class CRP_Output {
 
             $title = apply_filters( 'widget_title', $args['title'] );
             if( !empty( $title ) ) {
-                $output .= $widget['before_title'] . $title . $widget['after_title'];
+                $output .= $widget['before_title'] . esc_html( $title ) . $widget['after_title'];
             }
         } else {
             if( $args['title'] ) {
-                $output .= apply_filters( 'crp_output_list_title', '<h3 class="crp-list-title">' . $args['title'] . '</h3>', $post_id );
+                $output .= apply_filters( 'crp_output_list_title', '<h3 class="crp-list-title">' . esc_html( $args['title'] ) . '</h3>', $post_id );
             }
         }
 
@@ -61,7 +67,7 @@ class CRP_Output {
             $output .= $relations_output;
         } else {
             if ( $args['none_text'] ) {
-                $output .= '<p>' . $args['none_text'] . '</p>';
+                $output .= '<p>' . esc_html( $args['none_text'] ) . '</p>';
             } else {
                 // Don't output widget if no relations and no text to show
                 return '';

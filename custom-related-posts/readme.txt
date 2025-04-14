@@ -3,8 +3,8 @@ Contributors: BrechtVds
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QG7KZMGFU325Y
 Tags: related posts, manual related posts, widget, custom post type
 Requires at least: 3.5
-Tested up to: 6.7
-Stable tag: 1.7.4
+Tested up to: 6.8
+Stable tag: 1.7.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,11 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 2. Add relations by searching for posts
 
 == Changelog ==
+= 1.7.5 =
+* Improvement: WordPress 6.8 compatibility
+* Fix: Sanitization to prevent misuse of shortcode by contributors
+* Fix: Loading translations too early
+
 = 1.7.4 =
 * Fix: Restrict AJAX access to prevent misuse by contributors
 
@@ -119,6 +124,9 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 * Very first version of this plugin
 
 == Upgrade notice ==
+= 1.7.5 =
+Update to prevent potential misuse of shortcodes by contributors
+
 = 1.7.4 =
 Update to prevent potential misuse of relations by contributors
 

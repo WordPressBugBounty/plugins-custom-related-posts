@@ -3,13 +3,13 @@
 Plugin Name: Custom Related Posts
 Plugin URI: http://bootstrapped.ventures
 Description: Manually define related posts for any custom post type
-Version: 1.7.4
+Version: 1.7.5
 Author: Bootstrapped Ventures
 Author URI: http://bootstrapped.ventures
 Text Domain: custom-related-posts
 License: GPLv3
 */
-define( 'CRP_VERSION', '1.7.4' );
+define( 'CRP_VERSION', '1.7.5' );
 
 class CustomRelatedPosts {
 
@@ -122,9 +122,9 @@ class CustomRelatedPosts {
         $this->helper( 'relations' );
         $this->helper( 'shortcode' );
         $this->helper( 'support_tab' );
-        $this->helper( 'widget' );
 
         // Include required helpers but don't instantiate
+        $this->include_helper( 'widget' );
         $this->include_helper( 'addons/addon' );
         $this->include_helper( 'addons/premium_addon' );
 
