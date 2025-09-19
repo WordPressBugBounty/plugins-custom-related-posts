@@ -27,7 +27,7 @@ class CRP_Api {
 						'validate_callback' => array( $this, 'api_validate_numeric' ),
 					),
                 ),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array( $this, 'api_check_user_permission' ),
             ));
             register_rest_route( 'custom-related-posts/v1', '/relations/(?P<id>\d+)/order', array(
 				'callback' => array( $this, 'api_set_relations_order' ),
@@ -37,7 +37,7 @@ class CRP_Api {
 						'validate_callback' => array( $this, 'api_validate_numeric' ),
 					),
                 ),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array( $this, 'api_check_user_permission' ),
             ));
             register_rest_route( 'custom-related-posts/v1', '/relations/(?P<id>\d+)', array(
 				'callback' => array( $this, 'api_remove_relation' ),
@@ -47,7 +47,7 @@ class CRP_Api {
 						'validate_callback' => array( $this, 'api_validate_numeric' ),
 					),
                 ),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array( $this, 'api_check_user_permission' ),
             ));
             register_rest_route( 'custom-related-posts/v1', '/search', array(
 				'callback' => array( $this, 'api_search' ),
@@ -56,8 +56,12 @@ class CRP_Api {
 					'keyword' => array(
 						'type' => 'string',
 					),
+					'search_type' => array(
+						'type' => 'string',
+						'default' => 'default',
+					),
                 ),
-                'permission_callback' => '__return_true',
+                'permission_callback' => array( $this, 'api_check_user_permission' ),
 			));
 		}
     }
@@ -65,6 +69,10 @@ class CRP_Api {
     public function api_validate_numeric( $param, $request, $key ) {
 		return is_numeric( $param );
 	}
+
+    public function api_check_user_permission( $request ) {
+        return is_user_logged_in();
+    }
 
     public function api_add_relation( $request ) {
         $base_id = $request['id'];
@@ -118,6 +126,7 @@ class CRP_Api {
     public function api_search( $request ) {
         $post_type = sanitize_key( $request['post_type'] );
         $keyword = sanitize_text_field( $request['keyword'] );
+        $search_type = sanitize_text_field( $request['search_type'] );
 
         // Sanitize Post Type.
         $search_post_types = CustomRelatedPosts::setting( 'general_post_types' );
@@ -127,7 +136,6 @@ class CRP_Api {
         }
 
         $args = array(
-            's' => $keyword,
             'post_type' => $post_type,
             'post_status' => CustomRelatedPosts::setting( 'search_post_status' ),
             'posts_per_page' => intval( CustomRelatedPosts::setting( 'search_number_of_posts' ) ),
@@ -136,8 +144,27 @@ class CRP_Api {
             'perm' => 'readable', // Only return posts the current user can read,
         );
 
+        // Handle search type
+        switch ( $search_type ) {
+            case 'title':
+                // For title-only search, use a custom query parameter and filter
+                $args['crp_search_title'] = $keyword;
+                break;
+            case 'id':
+                // For ID search, use a custom query parameter and filter
+                $args['crp_search_id'] = $keyword;
+                break;
+            default:
+                // Default search in title and content
+                $args['s'] = $keyword;
+                break;
+        }
+
         $args = apply_filters( 'crp_search_args', $args );
+        
+        add_filter( 'posts_where', array( $this, 'filter_posts_where_custom_search' ), 10, 2 );
         $query = new WP_Query( $args );
+        remove_filter( 'posts_where', array( $this, 'filter_posts_where_custom_search' ), 10 );
 
         $posts = array();
         if ( $query->have_posts() ) {
@@ -154,11 +181,29 @@ class CRP_Api {
                     'date' => $post->post_date,
                     'date_display' => mysql2date( "j M 'y", $post->post_date ),
                     'post_type' => $post_type->labels->singular_name,
-                    
                 );
             }
         }
 
         return $posts;
 	}
+
+    /**
+     * Filter posts_where to add title-only and ID search functionality
+     */
+    public function filter_posts_where_custom_search( $where, $wp_query ) {
+        global $wpdb;
+        
+        $title_search = $wp_query->get( 'crp_search_title' );
+        if ( $title_search ) {
+            $where .= ' AND ' . $wpdb->posts . '.post_title LIKE \'%' . esc_sql( $wpdb->esc_like( $title_search ) ) . '%\'';
+        }
+        
+        $id_search = $wp_query->get( 'crp_search_id' );
+        if ( $id_search ) {
+            $where .= ' AND ' . $wpdb->posts . '.ID LIKE \'%' . esc_sql( $wpdb->esc_like( $id_search ) ) . '%\'';
+        }
+        
+        return $where;
+    }
 }

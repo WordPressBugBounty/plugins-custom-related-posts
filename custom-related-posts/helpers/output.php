@@ -56,7 +56,8 @@ class CRP_Output {
             }
         } else {
             if( $args['title'] ) {
-                $output .= apply_filters( 'crp_output_list_title', '<h3 class="crp-list-title">' . esc_html( $args['title'] ) . '</h3>', $post_id );
+                $title_tag = CustomRelatedPosts::setting( 'template_title_tag' );
+                $output .= apply_filters( 'crp_output_list_title', '<' . $title_tag . ' class="crp-list-title">' . esc_html( $args['title'] ) . '</' . $title_tag . '>', $post_id );
             }
         }
 
@@ -75,6 +76,9 @@ class CRP_Output {
         }
 
         if( $widget ) $output .= $widget['after_widget'];
+
+        // Add wrapper container.
+        $output = '<div class="crp-list-container">' . $output . '</div>';
 
         return apply_filters( 'crp_output_list', $output, $post_id );
     }
@@ -99,7 +103,7 @@ class CRP_Output {
 
         foreach( $relations as $relation ) {
             if( $relation['status'] == 'publish' ) {
-                $output .= apply_filters( 'crp_output_list_item', $this->output_relation( $relation ), $post_id, $relation );
+                $output .= apply_filters( 'crp_output_list_item', $this->output_relation( $relation, $post_id ), $post_id, $relation );
             }
         }
 
@@ -111,10 +115,20 @@ class CRP_Output {
         return $output;
     }
 
-    public function output_relation( $relation ) {
+    public function output_relation( $relation, $current_post_id = false ) {
         $classes = array(
             'crp-list-item',
         );
+
+        // Check if this relation is linking to the same post
+        $is_self_reference = $current_post_id && isset( $relation['id'] ) && $relation['id'] == $current_post_id;
+        
+        if ( $is_self_reference ) {
+            $classes[] = 'crp-list-item-self';
+        }
+        
+        // Check if self-reference links are disabled
+        $disable_self_links = $is_self_reference && !CustomRelatedPosts::setting( 'output_self_reference_links' );
 
         $link_target = CustomRelatedPosts::setting( 'output_open_in_new_tab') ? ' target="_blank"' : '';
         $tag = 'div' === CustomRelatedPosts::setting( 'template_container' ) ? 'div' : 'li';
@@ -133,7 +147,9 @@ class CRP_Output {
                 $size = array( intval( $match[1] ), intval( $match[2] ) );
             }
 
-            $image = get_the_post_thumbnail( $relation['id'], $size );
+            // Get attachment ID and use wp_get_attachment_image for proper alt/title attributes
+            $attachment_id = get_post_thumbnail_id( $relation['id'] );
+            $image = $attachment_id ? wp_get_attachment_image( $attachment_id, $size ) : '';
 
             if ( $image ) {
                 // Prevent image stretching in Gutenberg.
@@ -154,26 +170,137 @@ class CRP_Output {
                 }
 
                 $classes[] = 'crp-list-item-has-image';
-                $image = '<div class="crp-list-item-image"><a href="' . $relation['permalink'] . '"' . $link_target . '>' . $image . '</a></div>';
+                if ( $disable_self_links ) {
+                    $image = '<div class="crp-list-item-image">' . $image . '</div>';
+                } else {
+                    $image = '<div class="crp-list-item-image"><a href="' . $relation['permalink'] . '"' . $link_target . '>' . $image . '</a></div>';
+                }
             }
         }
 
-        $output = '<' . $tag . ' class="' . implode( ' ', $classes ) . '">';
+        // Check if user has enabled any additional fields beyond title
+        $has_additional_fields = $this->has_additional_fields_enabled();
 
-        if ( in_array( CustomRelatedPosts::setting( 'template_image' ), array( 'above', 'left' ) ) ) {
-            $output .= $image;
+        if ( $has_additional_fields ) {
+            // Build content fields based on user settings and order
+            $content_fields = $this->build_content_fields( $relation, $link_target, $disable_self_links );
+
+            $output = '<' . $tag . ' class="' . implode( ' ', $classes ) . '">';
+
+            if ( in_array( CustomRelatedPosts::setting( 'template_image' ), array( 'above', 'left' ) ) ) {
+                $output .= $image;
+            }
+
+            $output .= '<div class="crp-list-item-content">' . $content_fields . '</div>';
+
+            if ( in_array( CustomRelatedPosts::setting( 'template_image' ), array( 'below', 'right' ) ) ) {
+                $output .= $image;
+            }
+
+            $output .= '</' . $tag . '>';
+        } else {
+            // Use original structure for backward compatibility
+            $output = '<' . $tag . ' class="' . implode( ' ', $classes ) . '">';
+
+            if ( in_array( CustomRelatedPosts::setting( 'template_image' ), array( 'above', 'left' ) ) ) {
+                $output .= $image;
+            }
+
+            if ( $disable_self_links ) {
+                $output .= '<div class="crp-list-item-title">';
+                $output .= $relation['title'];
+                $output .= '</div>';
+            } else {
+                $output .= '<div class="crp-list-item-title"><a href="' . $relation['permalink'] . '"' . $link_target . '>';
+                $output .= $relation['title'];
+                $output .= '</a></div>';
+            }
+
+            if ( in_array( CustomRelatedPosts::setting( 'template_image' ), array( 'below', 'right' ) ) ) {
+                $output .= $image;
+            }
+
+            $output .= '</' . $tag . '>';
         }
-
-        $output .= '<div class="crp-list-item-title"><a href="' . $relation['permalink'] . '"' . $link_target . '>';
-        $output .= $relation['title'];
-        $output .= '</a></div>';
-
-        if ( in_array( CustomRelatedPosts::setting( 'template_image' ), array( 'below', 'right' ) ) ) {
-            $output .= $image;
-        }
-
-        $output .= '</' . $tag . '>';
         
         return $output;
+    }
+
+    private function build_content_fields( $relation, $link_target, $disable_self_links = false ) {
+        $template = CustomRelatedPosts::setting( 'template_field_layout' );
+        if ( empty( $template ) ) {
+            $template = '[title]';
+        }
+
+        // Split template into lines
+        $lines = array_filter( array_map( 'trim', explode( "\n", $template ) ) );
+        $content = '';
+
+        foreach ( $lines as $line ) {
+            if ( empty( $line ) ) continue;
+
+            // Replace faux shortcodes with actual content
+            $line_content = $this->replace_shortcodes( $line, $relation, $link_target, $disable_self_links );
+            
+            if ( ! empty( $line_content ) ) {
+                $content .= '<div class="crp-list-item-line">' . $line_content . '</div>';
+            }
+        }
+
+        return $content;
+    }
+
+    private function replace_shortcodes( $line, $relation, $link_target, $disable_self_links = false ) {
+        // Replace [title] shortcode
+        $line = preg_replace_callback( '/\[title\]/', function( $matches ) use ( $relation, $link_target, $disable_self_links ) {
+            if ( $disable_self_links ) {
+                return '<span class="crp-field-title">' . esc_html( $relation['title'] ) . '</span>';
+            } else {
+                return '<span class="crp-field-title"><a href="' . $relation['permalink'] . '"' . $link_target . '>' . esc_html( $relation['title'] ) . '</a></span>';
+            }
+        }, $line );
+
+        // Replace [author] shortcode
+        $line = preg_replace_callback( '/\[author\]/', function( $matches ) use ( $relation, $link_target ) {
+            if ( CustomRelatedPosts::setting( 'template_show_author' ) && ! empty( $relation['author_name'] ) ) {
+                return '<span class="crp-field-author"><a href="' . esc_url( $relation['author_url'] ) . '"' . $link_target . '>' . esc_html( $relation['author_name'] ) . '</a></span>';
+            }
+            return '';
+        }, $line );
+
+        // Replace [date] shortcode
+        $line = preg_replace_callback( '/\[date\]/', function( $matches ) use ( $relation ) {
+            if ( CustomRelatedPosts::setting( 'template_show_date' ) && ! empty( $relation['date'] ) ) {
+                $date_format = CustomRelatedPosts::setting( 'template_date_format' );
+                $formatted_date = get_the_date( $date_format, $relation['id'] );
+                return '<span class="crp-field-date">' . esc_html( $formatted_date ) . '</span>';
+            }
+            return '';
+        }, $line );
+
+        // Replace [excerpt] shortcode
+        $line = preg_replace_callback( '/\[excerpt\]/', function( $matches ) use ( $relation ) {
+            if ( CustomRelatedPosts::setting( 'template_show_excerpt' ) && ! empty( $relation['excerpt'] ) ) {
+                $excerpt_length = CustomRelatedPosts::setting( 'template_excerpt_length' );
+                $excerpt = wp_trim_words( $relation['excerpt'], $excerpt_length, '...' );
+                return '<span class="crp-field-excerpt">' . esc_html( $excerpt ) . '</span>';
+            }
+            return '';
+        }, $line );
+
+        return $line;
+    }
+
+    private function has_additional_fields_enabled() {
+        // Check if any additional fields are enabled
+        $show_author = CustomRelatedPosts::setting( 'template_show_author' );
+        $show_date = CustomRelatedPosts::setting( 'template_show_date' );
+        $show_excerpt = CustomRelatedPosts::setting( 'template_show_excerpt' );
+        
+        // Check if field layout has been customized (not just default '[title]')
+        $field_layout = CustomRelatedPosts::setting( 'template_field_layout' );
+        $has_custom_layout = ! empty( $field_layout ) && trim( $field_layout ) !== '[title]';
+        
+        return ( $show_author || $show_date || $show_excerpt ) && $has_custom_layout;
     }
 }

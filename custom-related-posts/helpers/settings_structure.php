@@ -66,6 +66,13 @@ $settings_structure = array(
                 'type' => 'toggle',
                 'default' => false,
             ),
+            array(
+                'name' => __( 'Update Cached Data', 'custom-related-posts' ),
+                'description' => __( 'Update the cached relation data in all relations. Use this after domain migrations, permalink structure changes or other changes that might affect the relation data.', 'custom-related-posts' ),
+                'type' => 'button',
+                'button' => __( 'Update Cached Data', 'custom-related-posts' ),
+                'link' => admin_url( 'options-general.php?page=crp_update_permalinks' ),
+            ),
         ),
     ),
     array(
@@ -86,6 +93,24 @@ $settings_structure = array(
                             'ol' => __( 'Ordered List', 'custom-related-posts' ),
                         ),
                         'default' => 'ul',
+                    ),
+                    array(
+                        'id' => 'template_title_tag',
+                        'name' => __( 'Title Tag', 'custom-related-posts' ),
+                        'description' => __( 'Choose the HTML tag for the list title.', 'custom-related-posts' ),
+                        'type' => 'dropdown',
+                        'options' => array(
+                            'h1' => 'h1',
+                            'h2' => 'h2',
+                            'h3' => 'h3',
+                            'h4' => 'h4',
+                            'h5' => 'h5',
+                            'h6' => 'h6',
+                            'p' => 'p',
+                            'div' => 'div',
+                            'span' => 'span',
+                        ),
+                        'default' => 'h3',
                     ),
                     array(
                         'id' => 'template_image',
@@ -128,8 +153,84 @@ $settings_structure = array(
                 ),
             ),
             array(
+                'name' => __( 'Fields to Display', 'custom-related-posts' ),
+                'description' => __( 'Choose which fields to display in the related posts. Make sure to update the cached data after changing this.', 'custom-related-posts' ),
+                'settings' => array(
+                    array(
+                        'id' => 'template_show_author',
+                        'name' => __( 'Show Post Author', 'custom-related-posts' ),
+                        'description' => __( 'Display the post author in related posts.', 'custom-related-posts' ),
+                        'type' => 'toggle',
+                        'default' => false,
+                    ),
+                    array(
+                        'id' => 'template_show_date',
+                        'name' => __( 'Show Post Date', 'custom-related-posts' ),
+                        'description' => __( 'Display the post date in related posts.', 'custom-related-posts' ),
+                        'type' => 'toggle',
+                        'default' => false,
+                    ),
+                    array(
+                        'id' => 'template_date_format',
+                        'name' => __( 'Date Format', 'custom-related-posts' ),
+                        'description' => __( 'Format for displaying the post date. Use WordPress date format codes like F j, Y for "January 1, 2024".', 'custom-related-posts' ),
+                        'documentation' => 'https://wordpress.org/documentation/article/customize-date-and-time-format/',
+                        'type' => 'text',
+                        'default' => 'F j, Y',
+                        'dependency' => array(
+                            'id' => 'template_show_date',
+                            'value' => true,
+                        ),
+                    ),
+                    array(
+                        'id' => 'template_show_excerpt',
+                        'name' => __( 'Show Post Excerpt', 'custom-related-posts' ),
+                        'description' => __( 'Display the post excerpt in related posts.', 'custom-related-posts' ),
+                        'type' => 'toggle',
+                        'default' => false,
+                    ),
+                    array(
+                        'id' => 'template_excerpt_length',
+                        'name' => __( 'Excerpt Length', 'custom-related-posts' ),
+                        'description' => __( 'Maximum number of words in the excerpt.', 'custom-related-posts' ),
+                        'type' => 'number',
+                        'default' => 20,
+                        'dependency' => array(
+                            'id' => 'template_show_excerpt',
+                            'value' => true,
+                        ),
+                    ),
+                    array(
+                        'id' => 'template_field_layout',
+                        'name' => __( 'Field Layout Template', 'custom-related-posts' ),
+                        'description' => __( 'Define the layout using placeholders. Each line becomes a new div.', 'custom-related-posts' ) . ' ' . __( 'Available placeholders:', 'custom-related-posts' ) . ' [title], [author], [date], [excerpt]',
+                        'type' => 'textarea',
+                        'default' => '[title]',
+                    ),
+                    array(
+                        'name' => __( 'Update Cached Data', 'custom-related-posts' ),
+                        'description' => __( 'Update the cached relation data in all relations. Use this after domain migrations, permalink structure changes or other changes that might affect the relation data.', 'custom-related-posts' ),
+                        'type' => 'button',
+                        'button' => __( 'Update Cached Data', 'custom-related-posts' ),
+                        'link' => admin_url( 'options-general.php?page=crp_update_permalinks' ),
+                        'dependency' => array(
+                            'id' => 'template_field_layout',
+                            'value' => '[title]',
+                            'type' => 'inverse',
+                        ),
+                    ),
+                ),
+            ),
+            array(
                 'name' => __( 'Advanced', 'custom-related-posts' ),
                 'settings' => array(
+                    array(
+                        'id' => 'output_self_reference_links',
+                        'name' => __( 'Use Self-Reference Links', 'custom-related-posts' ),
+                        'description' => __( 'Also use links when a post references itself in related posts.', 'custom-related-posts' ),
+                        'type' => 'toggle',
+                        'default' => true,
+                    ),
                     array(
                         'id' => 'custom_code_public_css',
                         'name' => __( 'CSS', 'custom-related-posts' ),

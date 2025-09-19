@@ -15,6 +15,7 @@ class AddRelationModal extends Component {
 		this.state = {
             postType: '',
             search: '',
+            searchType: 'default',
             posts: [],
             updatingPosts: false,
             needToUpdatePosts: false,
@@ -43,6 +44,17 @@ class AddRelationModal extends Component {
         }
     }
 
+    onChangeSearchType(event) {
+        const searchType = event.target.value;
+
+        if ( searchType !== this.state.searchType ) {
+            this.setState({
+                searchType,
+                needToUpdatePosts: this.state.search.length >= 2, // Only update if there is text.
+            });
+        }
+    }
+
     componentDidUpdate() {
         if ( this.state.needToUpdatePosts ) {
             this.updatePosts();
@@ -67,6 +79,7 @@ class AddRelationModal extends Component {
                     path: `/custom-related-posts/v1/search?${ stringify( {
                         post_type: this.state.postType,
                         keyword: this.state.search,
+                        search_type: this.state.searchType,
                     } ) }`,
                 } );
 
@@ -112,6 +125,14 @@ class AddRelationModal extends Component {
                             value={ this.state.search }
                             onChange={ this.onChangeSearch.bind(this) }
                         />
+                        <select
+                            value={ this.state.searchType }
+                            onChange={ this.onChangeSearchType.bind(this) }
+                        >
+                            <option value="default">{ __( 'Default Search', 'custom-related-posts' ) }</option>
+                            <option value="title">{ __( 'Search by Title only', 'custom-related-posts' ) }</option>
+                            <option value="id">{ __( 'Search by Post ID', 'custom-related-posts' ) }</option>
+                        </select>
                     </div>
                     <table className="crp-add-relations-posts">
                         <thead>

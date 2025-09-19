@@ -592,6 +592,7 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
     _this.state = {
       postType: '',
       search: '',
+      searchType: 'default',
       posts: [],
       updatingPosts: false,
       needToUpdatePosts: false
@@ -622,6 +623,17 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
       }
     }
   }, {
+    key: "onChangeSearchType",
+    value: function onChangeSearchType(event) {
+      var searchType = event.target.value;
+      if (searchType !== this.state.searchType) {
+        this.setState({
+          searchType: searchType,
+          needToUpdatePosts: this.state.search.length >= 2 // Only update if there is text.
+        });
+      }
+    }
+  }, {
     key: "componentDidUpdate",
     value: function componentDidUpdate() {
       if (this.state.needToUpdatePosts) {
@@ -647,7 +659,8 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
           var request = modal_apiFetch({
             path: "/custom-related-posts/v1/search?".concat((0,querystringify/* stringify */.A)({
               post_type: this.state.postType,
-              keyword: this.state.search
+              keyword: this.state.search,
+              search_type: this.state.searchType
             }))
           });
           request.then(function (posts) {
@@ -688,7 +701,16 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
         className: "crp-add-relations-search",
         value: this.state.search,
         onChange: this.onChangeSearch.bind(this)
-      })), /*#__PURE__*/React.createElement("table", {
+      }), /*#__PURE__*/React.createElement("select", {
+        value: this.state.searchType,
+        onChange: this.onChangeSearchType.bind(this)
+      }, /*#__PURE__*/React.createElement("option", {
+        value: "default"
+      }, modal_('Default Search', 'custom-related-posts')), /*#__PURE__*/React.createElement("option", {
+        value: "title"
+      }, modal_('Search by Title only', 'custom-related-posts')), /*#__PURE__*/React.createElement("option", {
+        value: "id"
+      }, modal_('Search by Post ID', 'custom-related-posts')))), /*#__PURE__*/React.createElement("table", {
         className: "crp-add-relations-posts"
       }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, modal_('Post Type')), /*#__PURE__*/React.createElement("th", null, modal_('Date')), /*#__PURE__*/React.createElement("th", null, modal_('Title')), /*#__PURE__*/React.createElement("th", null, modal_('Link')))), 0 === this.state.posts.length ? /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
         colSpan: "4"

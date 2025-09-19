@@ -38,7 +38,21 @@ class CRP_Blocks {
 
     public function custom_related_posts_block( $atts )
     {
+        $output = '';
+
+        $class = isset( $atts['className'] ) ? $atts['className'] : false;
+
+        if ( $class ) {
+            $output .= '<div class="crp-block-container ' . esc_attr( $class ) . '">';
+        }
+
         $post_id = get_the_ID();
-        return CustomRelatedPosts::get()->helper( 'output' )->output_list( $post_id, $atts );
+        $output .= CustomRelatedPosts::get()->helper( 'output' )->output_list( $post_id, $atts );
+
+        if ( $class ) {
+            $output .= '</div>';
+        }
+
+        return $output;
     }
 }

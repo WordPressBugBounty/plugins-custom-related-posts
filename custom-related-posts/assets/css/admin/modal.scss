@@ -4,11 +4,15 @@
     .crp-add-relations-input {
         display: flex;
         align-items: center;
+        gap: 5px;
+
+        select {
+            min-width: 150px;
+        }
 
         .crp-add-relations-search {
             width: 100%;
             max-width: 300px;
-            margin: 0 5px;
         }
     }
 

@@ -4,7 +4,7 @@ Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_i
 Tags: related posts, manual related posts, widget, custom post type
 Requires at least: 3.5
 Tested up to: 6.8
-Stable tag: 1.7.5
+Stable tag: 1.8.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,17 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 2. Add relations by searching for posts
 
 == Changelog ==
+= 1.8.0 =
+* Feature: Add customizable fields for related posts display including author, date, and excerpt
+* Feature: Implement search type selection in the related posts modal with customizable search options (by title, ID, or default)
+* Feature: Updated cached relation data through settings
+* Feature: Setting to change title HTML tag
+* Feature: Add setting to enable or disable self-reference links in related posts output
+* Improvement: Output optional alt and title tag for images
+* Improvement: Add optional class support for custom related posts block output
+* Improvement: Wrapper div container for title and list
+* Fix: Restrict access to API endpoints to logged in users only
+
 = 1.7.5 =
 * Improvement: WordPress 6.8 compatibility
 * Fix: Sanitization to prevent misuse of shortcode by contributors
@@ -124,6 +135,9 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 * Very first version of this plugin
 
 == Upgrade notice ==
+= 1.8.0 =
+Various new settings and improvements
+
 = 1.7.5 =
 Update to prevent potential misuse of shortcodes by contributors
 

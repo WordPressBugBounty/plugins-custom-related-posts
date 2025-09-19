@@ -7,6 +7,8 @@ class CRP_Ajax {
         add_action( 'wp_ajax_crp_search_posts', array( $this, 'ajax_search_posts' ) );
         add_action( 'wp_ajax_crp_link_posts', array( $this, 'ajax_link_posts' ) );
         add_action( 'wp_ajax_crp_remove_relation', array( $this, 'ajax_remove_relation' ) );
+        add_action( 'wp_ajax_crp_get_permalinks_count', array( $this, 'ajax_get_permalinks_count' ) );
+        add_action( 'wp_ajax_crp_update_permalinks_batch', array( $this, 'ajax_update_permalinks_batch' ) );
     }
 
     public function url()
@@ -124,5 +126,44 @@ class CRP_Ajax {
         }
 
         die();
+    }
+
+
+    public function ajax_get_permalinks_count()
+    {
+        if( check_ajax_referer( 'crp_admin', 'security', false ) && current_user_can( 'manage_options' ) )
+        {
+            $total_count = CustomRelatedPosts::get()->helper( 'relations' )->get_posts_with_relations_count();
+            
+            wp_send_json_success( array(
+                'total_count' => $total_count
+            ) );
+        }
+
+        wp_send_json_error( array( 'message' => __( 'Security check failed or insufficient permissions.', 'custom-related-posts' ) ) );
+    }
+
+    public function ajax_update_permalinks_batch()
+    {
+        if( check_ajax_referer( 'crp_admin', 'security', false ) && current_user_can( 'manage_options' ) )
+        {
+            $offset = intval( $_POST['offset'] );
+            $limit = intval( $_POST['limit'] );
+            
+            if ( $limit <= 0 ) {
+                $limit = 10; // Default batch size
+            }
+            
+            $post_ids = CustomRelatedPosts::get()->helper( 'relations' )->get_posts_with_relations_batch( $offset, $limit );
+            $updated_count = CustomRelatedPosts::get()->helper( 'relations' )->update_permalinks_batch( $post_ids );
+            
+            wp_send_json_success( array(
+                'updated_count' => $updated_count,
+                'processed_count' => count( $post_ids ),
+                'has_more' => count( $post_ids ) === $limit
+            ) );
+        }
+
+        wp_send_json_error( array( 'message' => __( 'Security check failed or insufficient permissions.', 'custom-related-posts' ) ) );
     }
 }

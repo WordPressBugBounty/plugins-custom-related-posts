@@ -119,12 +119,30 @@ class CRP_Relations {
     {
         if( !is_object( $post ) ) $post = get_post( $post );
 
+        // Get author information
+        $author_id = $post->post_author;
+        $author_name = get_the_author_meta( 'display_name', $author_id );
+        $author_url = get_author_posts_url( $author_id );
+
+        // Get excerpt - use manual excerpt if available, otherwise generate from content
+        $excerpt = '';
+        if ( ! empty( $post->post_excerpt ) ) {
+            $excerpt = $post->post_excerpt;
+        } else {
+            $excerpt_length = CustomRelatedPosts::setting( 'template_excerpt_length' );
+            $excerpt = wp_trim_words( $post->post_content, $excerpt_length, '...' );
+        }
+
         return array(
             'id' => $post->ID,
             'title' => $post->post_title,
             'permalink' => get_permalink( $post ),
             'status' => $post->post_status,
             'date' => $post->post_date,
+            'author_id' => $author_id,
+            'author_name' => $author_name,
+            'author_url' => $author_url,
+            'excerpt' => $excerpt,
         );
     }
 
@@ -188,4 +206,93 @@ class CRP_Relations {
 
         return $updated_relations;
     }
+
+    public function get_posts_with_relations_count() {
+        global $wpdb;
+        
+        $count = $wpdb->get_var( "
+            SELECT COUNT(DISTINCT post_id) 
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key IN ('crp_relations_from', 'crp_relations_to')
+        " );
+        
+        return intval( $count );
+    }
+
+    public function get_posts_with_relations_batch( $offset = 0, $limit = 10 ) {
+        global $wpdb;
+        
+        $post_ids = $wpdb->get_col( $wpdb->prepare( "
+            SELECT DISTINCT post_id 
+            FROM {$wpdb->postmeta} 
+            WHERE meta_key IN ('crp_relations_from', 'crp_relations_to')
+            ORDER BY post_id
+            LIMIT %d OFFSET %d
+        ", $limit, $offset ) );
+        
+        return array_map( 'intval', $post_ids );
+    }
+
+    public function update_permalinks_batch( $post_ids ) {
+        $updated_count = 0;
+        
+        foreach ( $post_ids as $post_id ) {
+            $updated = false;
+            
+            // Update relations_from
+            $relations_from = get_post_meta( $post_id, 'crp_relations_from', true );
+            if ( ! empty( $relations_from ) && is_array( $relations_from ) ) {
+                $new_relations_from = array();
+                foreach ( $relations_from as $related_id => $relation_data ) {
+                    $related_post = get_post( $related_id );
+                    if ( $related_post ) {
+                        $new_relations_from[ $related_id ] = $this->get_data( $related_post );
+                        // Preserve order if it exists
+                        if ( isset( $relation_data['order'] ) ) {
+                            $new_relations_from[ $related_id ]['order'] = $relation_data['order'];
+                        }
+                    } else {
+                        // Post no longer exists, remove the relation
+                        $new_relations_from[ $related_id ] = $relation_data;
+                    }
+                }
+                
+                if ( $relations_from !== $new_relations_from ) {
+                    update_post_meta( $post_id, 'crp_relations_from', $new_relations_from );
+                    $updated = true;
+                }
+            }
+            
+            // Update relations_to
+            $relations_to = get_post_meta( $post_id, 'crp_relations_to', true );
+            if ( ! empty( $relations_to ) && is_array( $relations_to ) ) {
+                $new_relations_to = array();
+                foreach ( $relations_to as $related_id => $relation_data ) {
+                    $related_post = get_post( $related_id );
+                    if ( $related_post ) {
+                        $new_relations_to[ $related_id ] = $this->get_data( $related_post );
+                        // Preserve order if it exists
+                        if ( isset( $relation_data['order'] ) ) {
+                            $new_relations_to[ $related_id ]['order'] = $relation_data['order'];
+                        }
+                    } else {
+                        // Post no longer exists, remove the relation
+                        $new_relations_to[ $related_id ] = $relation_data;
+                    }
+                }
+                
+                if ( $relations_to !== $new_relations_to ) {
+                    update_post_meta( $post_id, 'crp_relations_to', $new_relations_to );
+                    $updated = true;
+                }
+            }
+            
+            if ( $updated ) {
+                $updated_count++;
+            }
+        }
+        
+        return $updated_count;
+    }
+
 }

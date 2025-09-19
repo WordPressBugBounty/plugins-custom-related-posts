@@ -34,4 +34,41 @@
             width: 100%;
         }
     }
+
+    // New structure styling (only when additional fields are enabled).
+    .crp-list-item-content {
+        flex: 1;
+
+        .crp-list-item-line {
+            margin-bottom: 3px;
+
+            &:last-child {
+                margin-bottom: 0;
+            }
+        }
+
+        .crp-field-title {
+            font-weight: bold;
+
+            a {
+                text-decoration: none;
+                color: inherit;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+
+        .crp-field-author {
+            a {
+                color: inherit;
+                text-decoration: none;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+    }
 }
