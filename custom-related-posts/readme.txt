@@ -3,8 +3,8 @@ Contributors: BrechtVds
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QG7KZMGFU325Y
 Tags: related posts, manual related posts, widget, custom post type
 Requires at least: 3.5
-Tested up to: 6.8
-Stable tag: 1.8.0
+Tested up to: 6.9
+Stable tag: 1.8.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -40,12 +40,21 @@ This plugin is under active development. Any feature requests are welcome!
 
 Yes! We pride ourselves on offering awesome support and almost always answer support questions within 24 hours. Send us an email at [support@bootstrapped.ventures](mailto:support@bootstrapped.ventures) whenever you have a question or suggestion!
 
+= Where do I report security bugs found in this plugin? =
+Please report security bugs found in the source code of the undefined plugin through the [Patchstack Vulnerability Disclosure  Program](https://patchstack.com/database/vdp/9e5fc6c6-185c-40ee-9658-ac57163cfdec). The Patchstack team will assist you with verification, CVE assignment, and notify the developers of this plugin.
+
 == Screenshots ==
 
 1. The Custom Related Posts block and plugin sidebar
 2. Add relations by searching for posts
 
 == Changelog ==
+= 1.8.1 =
+* Improvement: Compatibility with Block Editor in iFrame
+* Fix: Additional check to make sure a logged in user can only see his own posts
+* Fix: Change default post status to published only
+* Fix: Icon color in Block Editor
+
 = 1.8.0 =
 * Feature: Add customizable fields for related posts display including author, date, and excerpt
 * Feature: Implement search type selection in the related posts modal with customizable search options (by title, ID, or default)
@@ -135,6 +144,9 @@ Yes! We pride ourselves on offering awesome support and almost always answer sup
 * Very first version of this plugin
 
 == Upgrade notice ==
+= 1.8.1 =
+Security related fix and block editor improvements
+
 = 1.8.0 =
 Various new settings and improvements
 

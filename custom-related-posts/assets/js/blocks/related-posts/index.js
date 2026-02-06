@@ -4,6 +4,7 @@ const { registerBlockType } = wp.blocks;
 import edit from './edit';
 
 registerBlockType( 'custom-related-posts/related-posts', {
+    apiVersion: 3,
     title: __( 'Custom Related Posts' ),
     description: __( 'Display a list of your custom related posts.' ),
     icon: 'list-view',

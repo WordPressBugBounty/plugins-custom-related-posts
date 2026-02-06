@@ -3,13 +3,13 @@
 Plugin Name: Custom Related Posts
 Plugin URI: http://bootstrapped.ventures
 Description: Manually define related posts for any custom post type
-Version: 1.8.0
+Version: 1.8.1
 Author: Bootstrapped Ventures
 Author URI: http://bootstrapped.ventures
 Text Domain: custom-related-posts
 License: GPLv3
 */
-define( 'CRP_VERSION', '1.8.0' );
+define( 'CRP_VERSION', '1.8.1' );
 
 class CustomRelatedPosts {
 

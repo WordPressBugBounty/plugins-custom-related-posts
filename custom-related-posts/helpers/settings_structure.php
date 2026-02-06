@@ -50,7 +50,7 @@ $settings_structure = array(
                     'any' => __('Any', 'custom-related-posts'),
                     'publish' => __('Published only', 'custom-related-posts'),
                 ),
-                'default' => 'any',
+                'default' => 'publish',
             ),
         ),
     ),

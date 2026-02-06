@@ -117,9 +117,55 @@ class CRP_Api {
 	}
 
     public function api_get_relations( $request ) {
+        $relations_from = CustomRelatedPosts::get()->relations_from( $request['id'] );
+        $relations_to = CustomRelatedPosts::get()->relations_to( $request['id'] );
+
+        $is_logged_in = is_user_logged_in();
+
+        // Filter relations based on user access
+        $filtered_from = array();
+        foreach ( $relations_from as $post_id => $relation ) {
+            $post = get_post( $post_id );
+            if ( ! $post ) {
+                continue;
+            }
+
+            if ( $is_logged_in ) {
+                // For logged-in users: check if they can read this post
+                if ( current_user_can( 'read_post', $post_id ) ) {
+                    $filtered_from[ $post_id ] = $relation;
+                }
+            } else {
+                // For non-logged-in users: only return published posts
+                if ( 'publish' === $post->post_status ) {
+                    $filtered_from[ $post_id ] = $relation;
+                }
+            }
+        }
+
+        $filtered_to = array();
+        foreach ( $relations_to as $post_id => $relation ) {
+            $post = get_post( $post_id );
+            if ( ! $post ) {
+                continue;
+            }
+
+            if ( $is_logged_in ) {
+                // For logged-in users: check if they can read this post
+                if ( current_user_can( 'read_post', $post_id ) ) {
+                    $filtered_to[ $post_id ] = $relation;
+                }
+            } else {
+                // For non-logged-in users: only return published posts
+                if ( 'publish' === $post->post_status ) {
+                    $filtered_to[ $post_id ] = $relation;
+                }
+            }
+        }
+
         return array(
-            'from' => CustomRelatedPosts::get()->relations_from( $request['id'] ),
-            'to' => CustomRelatedPosts::get()->relations_to( $request['id'] ),
+            'from' => $filtered_from,
+            'to' => $filtered_to,
         );
     }
 
@@ -171,6 +217,11 @@ class CRP_Api {
             $query_posts = $query->posts;
 
             foreach( $query_posts as $post ) {
+                // Additional safeguard: Only include posts the current user can read
+                if ( ! current_user_can( 'read_post', $post->ID ) ) {
+                    continue;
+                }
+
                 $post_type = get_post_type_object( $post->post_type );
 
                 $posts[] = array(

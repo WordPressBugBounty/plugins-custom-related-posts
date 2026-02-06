@@ -62,6 +62,11 @@ class CRP_Ajax {
                 $posts = $query->posts;
 
                 foreach( $posts as $post ) {
+                    // Additional safeguard: Only include posts the current user can read
+                    if ( ! current_user_can( 'read_post', $post->ID ) ) {
+                        continue;
+                    }
+
                     $post_type = get_post_type_object( $post->post_type );
 
                     $html .= '<tr id="crp_post_' . $post->ID . '">';

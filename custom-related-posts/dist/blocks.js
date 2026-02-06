@@ -742,15 +742,17 @@ var sidebar_ = wp.i18n.__;
 var _wp$element = wp.element,
   sidebar_Component = _wp$element.Component,
   sidebar_Fragment = _wp$element.Fragment;
-var _wp$editPost = wp.editPost,
-  PluginSidebar = _wp$editPost.PluginSidebar,
-  PluginSidebarMoreMenuItem = _wp$editPost.PluginSidebarMoreMenuItem;
 var sidebar_wp$components = wp.components,
   Panel = sidebar_wp$components.Panel,
   PanelBody = sidebar_wp$components.PanelBody,
   sidebar_Button = sidebar_wp$components.Button,
   Icon = sidebar_wp$components.Icon;
 var registerPlugin = wp.plugins.registerPlugin;
+
+// WordPress 6.6+ uses wp.editor, WordPress 6.4-6.5 used wp.editPost
+var _ref = wp.editor && wp.editor.PluginSidebar ? wp.editor : wp.editPost,
+  PluginSidebar = _ref.PluginSidebar,
+  PluginSidebarMoreMenuItem = _ref.PluginSidebarMoreMenuItem;
 
 
 
@@ -800,13 +802,14 @@ var Sidebar = /*#__PURE__*/function (_Component) {
             height: "20"
           }, /*#__PURE__*/React.createElement("title", null, "link"), /*#__PURE__*/React.createElement("g", {
             className: "nc-icon-wrapper",
-            fill: "#111111"
+            fill: "currentColor"
           }, /*#__PURE__*/React.createElement("path", {
             d: "M17.619,10.138l-2.241,2.24c-.06.061-.1.13-.158.193a4.958,4.958,0,0,1,2.816,1.393,5.008,5.008,0,0,1,0,7.072l-5.5,5.5a5,5,0,0,1-7.072-7.072l2.385-2.385a10.054,10.054,0,0,1-.23-4.011L3.343,17.343A8,8,0,0,0,14.657,28.657l5.5-5.5a7.99,7.99,0,0,0-2.538-13.019Z",
-            fill: "#111111"
+            fill: "currentColor"
           }), " ", /*#__PURE__*/React.createElement("path", {
             "data-color": "color-2",
-            d: "M17.343,3.343l-5.5,5.5a7.99,7.99,0,0,0,2.538,13.019l2.241-2.24c.06-.061.107-.129.162-.193a4.953,4.953,0,0,1-2.82-1.393,5.008,5.008,0,0,1,0-7.072l5.5-5.5a5,5,0,0,1,7.072,7.072l-2.383,2.382a10.086,10.086,0,0,1,.241,4l4.263-4.263A8,8,0,0,0,17.343,3.343Z"
+            d: "M17.343,3.343l-5.5,5.5a7.99,7.99,0,0,0,2.538,13.019l2.241-2.24c.06-.061.107-.129.162-.193a4.953,4.953,0,0,1-2.82-1.393,5.008,5.008,0,0,1,0-7.072l5.5-5.5a5,5,0,0,1,7.072,7.072l-2.383,2.382a10.086,10.086,0,0,1,.241,4l4.263-4.263A8,8,0,0,0,17.343,3.343Z",
+            fill: "currentColor"
           })))
         })
       }, /*#__PURE__*/React.createElement(Panel, null, /*#__PURE__*/React.createElement(PanelBody, {
@@ -845,47 +848,104 @@ var edit_wp$components = wp.components,
   edit_PanelBody = edit_wp$components.PanelBody,
   TextControl = edit_wp$components.TextControl,
   RadioControl = edit_wp$components.RadioControl,
-  Disabled = edit_wp$components.Disabled;
+  Disabled = edit_wp$components.Disabled,
+  Spinner = edit_wp$components.Spinner;
 var edit_wp$element = wp.element,
   edit_Component = edit_wp$element.Component,
   edit_Fragment = edit_wp$element.Fragment;
 
-// Backwards compatibility.
-var InspectorControls;
-if (wp.hasOwnProperty('blockEditor')) {
-  InspectorControls = wp.blockEditor.InspectorControls;
-} else {
-  InspectorControls = wp.editor.InspectorControls;
-}
-var ServerSideRender;
-if (wp.hasOwnProperty('serverSideRender')) {
-  ServerSideRender = wp.serverSideRender;
-} else {
-  ServerSideRender = wp.components.ServerSideRender;
-}
+// Backwards compatibility - WordPress 6.4+ uses wp.blockEditor
+var edit_ref = wp.blockEditor || wp.editor || {},
+  InspectorControls = edit_ref.InspectorControls,
+  useBlockProps = edit_ref.useBlockProps;
+var ServerSideRender = wp.serverSideRender || wp.components.ServerSideRender;
 
 
 var RelatedPostsEdit = /*#__PURE__*/function (_Component) {
   function RelatedPostsEdit() {
+    var _this;
     edit_classCallCheck(this, RelatedPostsEdit);
-    return edit_callSuper(this, RelatedPostsEdit, arguments);
+    _this = edit_callSuper(this, RelatedPostsEdit, arguments);
+    _this.state = {
+      isLoading: false
+    };
+    _this.loadingTimeout = null;
+    return _this;
   }
   edit_inherits(RelatedPostsEdit, _Component);
   return edit_createClass(RelatedPostsEdit, [{
+    key: "componentDidUpdate",
+    value: function componentDidUpdate(prevProps) {
+      var _this2 = this;
+      // If relations changed (IDs or order), show loading indicator
+      var relations = this.props.relations;
+
+      // Get ordered relation IDs based on order property
+      var getOrderedRelationIDs = function getOrderedRelationIDs(relationsObj) {
+        return Object.values(relationsObj.to).filter(function (post) {
+          return 'publish' === post.status;
+        }).sort(function (a, b) {
+          return (a.order || 0) - (b.order || 0);
+        }).map(function (post) {
+          return post.id;
+        });
+      };
+      var prevOrderedIDs = getOrderedRelationIDs(prevProps.relations).join(',');
+      var currentOrderedIDs = getOrderedRelationIDs(relations).join(',');
+      if (prevOrderedIDs !== currentOrderedIDs) {
+        // Clear any existing timeout
+        if (this.loadingTimeout) {
+          clearTimeout(this.loadingTimeout);
+        }
+
+        // Show loading indicator
+        this.setState({
+          isLoading: true
+        });
+
+        // Hide loading indicator after a reasonable time (ServerSideRender handles its own loading)
+        // This gives users visual feedback that something is happening
+        this.loadingTimeout = setTimeout(function () {
+          _this2.setState({
+            isLoading: false
+          });
+          _this2.loadingTimeout = null;
+        }, 1500); // Show for at least 1.5 seconds to give ServerSideRender time to load
+      }
+    }
+  }, {
+    key: "componentWillUnmount",
+    value: function componentWillUnmount() {
+      // Clean up timeout
+      if (this.loadingTimeout) {
+        clearTimeout(this.loadingTimeout);
+      }
+    }
+  }, {
     key: "render",
     value: function render() {
       var _this$props = this.props,
         attributes = _this$props.attributes,
-        setAttributes = _this$props.setAttributes;
+        setAttributes = _this$props.setAttributes,
+        relations = _this$props.relations;
       var title = attributes.title,
         none_text = attributes.none_text,
         order_by = attributes.order_by,
         order = attributes.order;
-      var relations = Object.values(this.props.relations.to).filter(function (post) {
+
+      // Filter and sort relations by order property (for custom order)
+      var filteredRelations = Object.values(relations.to).filter(function (post) {
         return 'publish' === post.status;
+      }).sort(function (a, b) {
+        return (a.order || 0) - (b.order || 0);
       });
-      var hasRelations = relations.length > 0;
-      var sideBar = /*#__PURE__*/React.createElement(InspectorControls, null, /*#__PURE__*/React.createElement(edit_PanelBody, {
+      var hasRelations = filteredRelations.length > 0;
+
+      // Create ordered relation IDs for the render key (includes order information)
+      var orderedRelationIDs = filteredRelations.map(function (post) {
+        return post.id;
+      });
+      var sideBar = InspectorControls ? /*#__PURE__*/React.createElement(InspectorControls, null, /*#__PURE__*/React.createElement(edit_PanelBody, {
         title: edit_('Custom Related Posts Settings')
       }, /*#__PURE__*/React.createElement(TextControl, {
         label: edit_('Title'),
@@ -940,22 +1000,62 @@ var RelatedPostsEdit = /*#__PURE__*/function (_Component) {
             order: value
           });
         }
-      })));
-      return /*#__PURE__*/React.createElement(edit_Fragment, null, sideBar, !hasRelations && !none_text ? /*#__PURE__*/React.createElement("em", null, edit_('This block will be empty until you add a related post.')) : /*#__PURE__*/React.createElement(Disabled, null, /*#__PURE__*/React.createElement(ServerSideRender, {
-        block: "custom-related-posts/related-posts",
-        attributes: edit_objectSpread(edit_objectSpread({}, attributes), {}, {
-          relations: relations
-        })
-      })));
+      }))) : null;
+
+      // Create a key that changes when relations change (IDs or order) to force ServerSideRender to re-render
+      var renderKey = orderedRelationIDs.join(',');
+      var isLoading = this.state.isLoading;
+      return /*#__PURE__*/React.createElement(edit_Fragment, null, sideBar, /*#__PURE__*/React.createElement(RelatedPostsEditContent, {
+        isLoading: isLoading,
+        hasRelations: hasRelations,
+        none_text: none_text,
+        renderKey: renderKey,
+        attributes: attributes,
+        filteredRelations: filteredRelations
+      }));
     }
   }]);
-}(edit_Component);
+}(edit_Component); // Wrapper component that uses useBlockProps hook for API version 3 compatibility
+function RelatedPostsEditContent(props) {
+  var blockProps = useBlockProps ? useBlockProps() : {};
+  var isLoading = props.isLoading,
+    hasRelations = props.hasRelations,
+    none_text = props.none_text,
+    renderKey = props.renderKey,
+    attributes = props.attributes,
+    filteredRelations = props.filteredRelations;
+  return /*#__PURE__*/React.createElement("div", blockProps, !hasRelations && !none_text ? /*#__PURE__*/React.createElement("em", null, edit_('This block will be empty until you add a related post.')) : /*#__PURE__*/React.createElement(Disabled, null, isLoading && /*#__PURE__*/React.createElement("div", {
+    style: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '20px',
+      minHeight: '60px'
+    }
+  }, /*#__PURE__*/React.createElement(Spinner, null), /*#__PURE__*/React.createElement("span", {
+    style: {
+      marginLeft: '10px'
+    }
+  }, edit_('Loading related posts...'))), /*#__PURE__*/React.createElement("div", {
+    style: {
+      opacity: isLoading ? 0.5 : 1,
+      transition: 'opacity 0.3s ease'
+    }
+  }, ServerSideRender ? /*#__PURE__*/React.createElement(ServerSideRender, {
+    key: renderKey,
+    block: "custom-related-posts/related-posts",
+    attributes: edit_objectSpread(edit_objectSpread({}, attributes), {}, {
+      relations: filteredRelations
+    })
+  }) : /*#__PURE__*/React.createElement("em", null, edit_('Server-side rendering is not available. Please refresh the page.')))));
+}
 /* harmony default export */ const edit = (helpers.selectRelationsForCurrentPost(RelatedPostsEdit));
 ;// ./custom-related-posts/assets/js/blocks/related-posts/index.js
 var related_posts_ = wp.i18n.__;
 var registerBlockType = wp.blocks.registerBlockType;
 
 registerBlockType('custom-related-posts/related-posts', {
+  apiVersion: 3,
   title: related_posts_('Custom Related Posts'),
   description: related_posts_('Display a list of your custom related posts.'),
   icon: 'list-view',

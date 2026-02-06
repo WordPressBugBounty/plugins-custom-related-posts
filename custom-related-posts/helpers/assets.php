@@ -43,6 +43,19 @@ class CRP_Assets {
 
     public function block_assets() {
         wp_enqueue_style( 'crp-blocks', CustomRelatedPosts::get()->coreUrl . '/dist/blocks.css', array(), CRP_VERSION, 'all' );
-		wp_enqueue_script( 'crp-blocks', CustomRelatedPosts::get()->coreUrl . '/dist/blocks.js', array( 'wp-i18n', 'wp-element', 'wp-blocks', 'wp-components', 'wp-data', 'wp-edit-post' ), CRP_VERSION );
+		
+		// WordPress 6.4+ block editor dependencies
+		// wp-edit-post is needed for PluginSidebar components
+		$dependencies = array( 
+			'wp-i18n', 
+			'wp-element', 
+			'wp-blocks', 
+			'wp-components', 
+			'wp-data', 
+			'wp-edit-post',
+			'wp-plugins'
+		);
+		
+		wp_enqueue_script( 'crp-blocks', CustomRelatedPosts::get()->coreUrl . '/dist/blocks.js', $dependencies, CRP_VERSION, true );
 	}
 }
