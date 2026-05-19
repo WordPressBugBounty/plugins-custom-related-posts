@@ -515,27 +515,46 @@ function Post(props) {
   var orderedPost = post_objectSpread(post_objectSpread({}, post), {}, {
     order: relationToIDs.length
   });
-  return /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", null, post.post_type), /*#__PURE__*/React.createElement("td", null, post.date_display), /*#__PURE__*/React.createElement("td", null, /*#__PURE__*/React.createElement("a", {
+  return /*#__PURE__*/React.createElement("tr", {
+    className: "crp-add-relations-row"
+  }, /*#__PURE__*/React.createElement("td", {
+    className: "crp-add-relations-col-thumbnail"
+  }, post.thumbnail ? /*#__PURE__*/React.createElement("img", {
+    src: post.thumbnail,
+    alt: ""
+  }) : /*#__PURE__*/React.createElement("span", {
+    className: "crp-add-relations-thumbnail-placeholder",
+    "aria-hidden": "true"
+  })), /*#__PURE__*/React.createElement("td", {
+    className: "crp-add-relations-col-type"
+  }, post.post_type), /*#__PURE__*/React.createElement("td", {
+    className: "crp-add-relations-col-date"
+  }, post.date_display), /*#__PURE__*/React.createElement("td", {
+    className: "crp-add-relations-col-title"
+  }, /*#__PURE__*/React.createElement("a", {
     href: post.permalink,
     target: "_blank"
-  }, post.title)), /*#__PURE__*/React.createElement("td", null, 'both' === linked ? /*#__PURE__*/React.createElement(post_Button, {
+  }, post.title)), /*#__PURE__*/React.createElement("td", {
+    className: "crp-add-relations-col-action"
+  }, 'both' === linked ? /*#__PURE__*/React.createElement(post_Button, {
+    className: "crp-add-relations-button",
     variant: "secondary",
     disabled: true
   }, post_('Already linked')) : /*#__PURE__*/React.createElement(post_Fragment, null, /*#__PURE__*/React.createElement(post_Button, {
-    className: "crp-add-relations-button-to",
+    className: "crp-add-relations-button crp-add-relations-button-to",
     variant: "secondary",
     disabled: false !== linked,
     onClick: function onClick() {
       return props.onAddRelationTo(orderedPost);
     }
   }, post_('To')), /*#__PURE__*/React.createElement(post_Button, {
-    className: "crp-add-relations-button-both",
+    className: "crp-add-relations-button crp-add-relations-button-both",
     isPrimary: true,
     onClick: function onClick() {
       return props.onAddRelationBoth(orderedPost);
     }
   }, post_('Both')), /*#__PURE__*/React.createElement(post_Button, {
-    className: "crp-add-relations-button-from",
+    className: "crp-add-relations-button crp-add-relations-button-from",
     variant: "secondary",
     disabled: false !== linked,
     onClick: function onClick() {
@@ -581,7 +600,9 @@ var modal_ = wp.i18n.__;
 var modal_wp = wp,
   modal_apiFetch = modal_wp.apiFetch;
 var Component = wp.element.Component;
-var Modal = wp.components.Modal;
+var modal_wp$components = wp.components,
+  Modal = modal_wp$components.Modal,
+  Spinner = modal_wp$components.Spinner;
 
 
 var AddRelationModal = /*#__PURE__*/function (_Component) {
@@ -589,26 +610,38 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
     var _this;
     _classCallCheck(this, AddRelationModal);
     _this = _callSuper(this, AddRelationModal, arguments);
+    _this.latestRequestId = 0;
+    _this.isComponentMounted = false;
     _this.state = {
       postType: '',
       search: '',
       searchType: 'default',
       posts: [],
       updatingPosts: false,
-      needToUpdatePosts: false
+      hasLoadedPosts: false
     };
     return _this;
   }
   _inherits(AddRelationModal, _Component);
   return _createClass(AddRelationModal, [{
+    key: "componentDidMount",
+    value: function componentDidMount() {
+      this.isComponentMounted = true;
+      this.updatePosts();
+    }
+  }, {
+    key: "componentWillUnmount",
+    value: function componentWillUnmount() {
+      this.isComponentMounted = false;
+    }
+  }, {
     key: "onChangePostType",
     value: function onChangePostType(event) {
       var postType = event.target.value;
       if (postType !== this.state.postType) {
         this.setState({
-          postType: postType,
-          needToUpdatePosts: this.state.search.length >= 2 // Only update if there is text.
-        });
+          postType: postType
+        }, this.updatePosts.bind(this));
       }
     }
   }, {
@@ -617,9 +650,8 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
       var search = event.target.value;
       if (search !== this.state.search) {
         this.setState({
-          search: search,
-          needToUpdatePosts: true
-        });
+          search: search
+        }, this.updatePosts.bind(this));
       }
     }
   }, {
@@ -628,49 +660,62 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
       var searchType = event.target.value;
       if (searchType !== this.state.searchType) {
         this.setState({
-          searchType: searchType,
-          needToUpdatePosts: this.state.search.length >= 2 // Only update if there is text.
-        });
-      }
-    }
-  }, {
-    key: "componentDidUpdate",
-    value: function componentDidUpdate() {
-      if (this.state.needToUpdatePosts) {
-        this.updatePosts();
+          searchType: searchType
+        }, this.updatePosts.bind(this));
       }
     }
   }, {
     key: "updatePosts",
     value: function updatePosts() {
       var _this2 = this;
-      if (!this.state.updatingPosts) {
-        if (this.state.search.length < 2) {
-          this.setState({
+      var requestId = ++this.latestRequestId;
+      this.setState({
+        updatingPosts: true
+      });
+      modal_apiFetch({
+        path: "/custom-related-posts/v1/search?".concat((0,querystringify/* stringify */.A)({
+          post_type: this.state.postType,
+          keyword: this.state.search,
+          search_type: this.state.searchType
+        }))
+      }).then(function (posts) {
+        if (_this2.isComponentMounted && requestId === _this2.latestRequestId) {
+          _this2.setState({
+            posts: posts,
             updatingPosts: false,
-            needToUpdatePosts: false,
-            posts: []
-          });
-        } else {
-          this.setState({
-            updatingPosts: true,
-            needToUpdatePosts: false
-          });
-          var request = modal_apiFetch({
-            path: "/custom-related-posts/v1/search?".concat((0,querystringify/* stringify */.A)({
-              post_type: this.state.postType,
-              keyword: this.state.search,
-              search_type: this.state.searchType
-            }))
-          });
-          request.then(function (posts) {
-            _this2.setState({
-              posts: posts,
-              updatingPosts: false
-            });
+            hasLoadedPosts: true
           });
         }
+      })["catch"](function () {
+        if (_this2.isComponentMounted && requestId === _this2.latestRequestId) {
+          _this2.setState({
+            posts: [],
+            updatingPosts: false,
+            hasLoadedPosts: true
+          });
+        }
+      });
+    }
+  }, {
+    key: "renderPostsBody",
+    value: function renderPostsBody() {
+      var postRows = this.state.posts.map(function (post, index) {
+        return /*#__PURE__*/React.createElement(modal_post, {
+          post: post,
+          key: index
+        });
+      });
+      if (!this.state.hasLoadedPosts) {
+        return /*#__PURE__*/React.createElement("tbody", null);
       }
+      if (0 === this.state.posts.length) {
+        return /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", {
+          className: "crp-add-relations-feedback"
+        }, /*#__PURE__*/React.createElement("td", {
+          colSpan: "5"
+        }, /*#__PURE__*/React.createElement("em", null, modal_('No posts found.', 'custom-related-posts')))));
+      }
+      return /*#__PURE__*/React.createElement("tbody", null, postRows);
     }
   }, {
     key: "render",
@@ -694,14 +739,18 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
           value: postType,
           key: index
         }, crp_admin.post_types[postType]);
-      })), /*#__PURE__*/React.createElement("input", {
+      })), /*#__PURE__*/React.createElement("div", {
+        className: "crp-add-relations-search-wrap"
+      }, /*#__PURE__*/React.createElement("input", {
         autoFocus: true,
         type: "text",
-        placeholder: modal_('Start typing to search...'),
+        placeholder: modal_('Search posts...'),
         className: "crp-add-relations-search",
         value: this.state.search,
         onChange: this.onChangeSearch.bind(this)
-      }), /*#__PURE__*/React.createElement("select", {
+      }), this.state.updatingPosts && /*#__PURE__*/React.createElement("span", {
+        className: "crp-add-relations-search-spinner"
+      }, /*#__PURE__*/React.createElement(Spinner, null))), /*#__PURE__*/React.createElement("select", {
         value: this.state.searchType,
         onChange: this.onChangeSearchType.bind(this)
       }, /*#__PURE__*/React.createElement("option", {
@@ -710,16 +759,21 @@ var AddRelationModal = /*#__PURE__*/function (_Component) {
         value: "title"
       }, modal_('Search by Title only', 'custom-related-posts')), /*#__PURE__*/React.createElement("option", {
         value: "id"
-      }, modal_('Search by Post ID', 'custom-related-posts')))), /*#__PURE__*/React.createElement("table", {
+      }, modal_('Search by Post ID', 'custom-related-posts')))), /*#__PURE__*/React.createElement("div", {
+        className: "crp-add-relations-results".concat(this.state.updatingPosts ? ' is-loading' : '')
+      }, /*#__PURE__*/React.createElement("table", {
         className: "crp-add-relations-posts"
-      }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", null, modal_('Post Type')), /*#__PURE__*/React.createElement("th", null, modal_('Date')), /*#__PURE__*/React.createElement("th", null, modal_('Title')), /*#__PURE__*/React.createElement("th", null, modal_('Link')))), 0 === this.state.posts.length ? /*#__PURE__*/React.createElement("tbody", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("td", {
-        colSpan: "4"
-      }, /*#__PURE__*/React.createElement("em", null, "No posts found.")))) : /*#__PURE__*/React.createElement("tbody", null, this.state.posts.map(function (post, index) {
-        return /*#__PURE__*/React.createElement(modal_post, {
-          post: post,
-          key: index
-        });
-      })))));
+      }, /*#__PURE__*/React.createElement("thead", null, /*#__PURE__*/React.createElement("tr", null, /*#__PURE__*/React.createElement("th", {
+        className: "crp-add-relations-col-thumbnail"
+      }, "\xA0"), /*#__PURE__*/React.createElement("th", {
+        className: "crp-add-relations-col-type"
+      }, modal_('Type')), /*#__PURE__*/React.createElement("th", {
+        className: "crp-add-relations-col-date"
+      }, modal_('Date')), /*#__PURE__*/React.createElement("th", {
+        className: "crp-add-relations-col-title"
+      }, modal_('Title')), /*#__PURE__*/React.createElement("th", {
+        className: "crp-add-relations-col-action"
+      }, modal_('Link')))), this.renderPostsBody()))));
     }
   }]);
 }(Component);
@@ -849,7 +903,7 @@ var edit_wp$components = wp.components,
   TextControl = edit_wp$components.TextControl,
   RadioControl = edit_wp$components.RadioControl,
   Disabled = edit_wp$components.Disabled,
-  Spinner = edit_wp$components.Spinner;
+  edit_Spinner = edit_wp$components.Spinner;
 var edit_wp$element = wp.element,
   edit_Component = edit_wp$element.Component,
   edit_Fragment = edit_wp$element.Fragment;
@@ -1032,7 +1086,7 @@ function RelatedPostsEditContent(props) {
       padding: '20px',
       minHeight: '60px'
     }
-  }, /*#__PURE__*/React.createElement(Spinner, null), /*#__PURE__*/React.createElement("span", {
+  }, /*#__PURE__*/React.createElement(edit_Spinner, null), /*#__PURE__*/React.createElement("span", {
     style: {
       marginLeft: '10px'
     }

@@ -3,7 +3,7 @@ import { stringify } from 'querystringify';
 const { __ } = wp.i18n;
 const { apiFetch } = wp;
 const { Component } = wp.element;
-const { Modal } = wp.components;
+const { Modal, Spinner } = wp.components;
 
 import '../../../css/admin/modal.scss';
 import Post from './post';
@@ -12,24 +12,35 @@ class AddRelationModal extends Component {
 	constructor() {
 		super( ...arguments );
 
+        this.latestRequestId = 0;
+        this.isComponentMounted = false;
+
 		this.state = {
             postType: '',
             search: '',
             searchType: 'default',
             posts: [],
             updatingPosts: false,
-            needToUpdatePosts: false,
-		}
+            hasLoadedPosts: false,
+		};
+    }
+
+    componentDidMount() {
+        this.isComponentMounted = true;
+        this.updatePosts();
+    }
+
+    componentWillUnmount() {
+        this.isComponentMounted = false;
     }
 
     onChangePostType(event) {
         const postType = event.target.value;
 
         if ( postType !== this.state.postType ) {
-            this.setState({
+            this.setState( {
                 postType,
-                needToUpdatePosts: this.state.search.length >= 2, // Only update if there is text.
-            });
+            }, this.updatePosts.bind( this ) );
         }
     }
 
@@ -37,10 +48,9 @@ class AddRelationModal extends Component {
         const search = event.target.value;
 
         if ( search !== this.state.search ) {
-            this.setState({
+            this.setState( {
                 search,
-                needToUpdatePosts: true,
-            });
+            }, this.updatePosts.bind( this ) );
         }
     }
 
@@ -48,49 +58,69 @@ class AddRelationModal extends Component {
         const searchType = event.target.value;
 
         if ( searchType !== this.state.searchType ) {
-            this.setState({
+            this.setState( {
                 searchType,
-                needToUpdatePosts: this.state.search.length >= 2, // Only update if there is text.
-            });
-        }
-    }
-
-    componentDidUpdate() {
-        if ( this.state.needToUpdatePosts ) {
-            this.updatePosts();
+            }, this.updatePosts.bind( this ) );
         }
     }
 
     updatePosts() {
-        if ( ! this.state.updatingPosts ) {
-            if ( this.state.search.length < 2 ) {
-                this.setState({
+        const requestId = ++this.latestRequestId;
+
+        this.setState( {
+            updatingPosts: true,
+        } );
+
+        apiFetch( {
+            path: `/custom-related-posts/v1/search?${ stringify( {
+                post_type: this.state.postType,
+                keyword: this.state.search,
+                search_type: this.state.searchType,
+            } ) }`,
+        } ).then( ( posts ) => {
+            if ( this.isComponentMounted && requestId === this.latestRequestId ) {
+                this.setState( {
+                    posts,
                     updatingPosts: false,
-                    needToUpdatePosts: false,
-                    posts: [],
-                });
-            } else {
-                this.setState({
-                    updatingPosts: true,
-                    needToUpdatePosts: false,
-                });
-
-                const request = apiFetch( {
-                    path: `/custom-related-posts/v1/search?${ stringify( {
-                        post_type: this.state.postType,
-                        keyword: this.state.search,
-                        search_type: this.state.searchType,
-                    } ) }`,
-                } );
-
-                request.then( ( posts ) => {
-                    this.setState( {
-                        posts,
-                        updatingPosts: false,
-                    } );
+                    hasLoadedPosts: true,
                 } );
             }
+        } ).catch( () => {
+            if ( this.isComponentMounted && requestId === this.latestRequestId ) {
+                this.setState( {
+                    posts: [],
+                    updatingPosts: false,
+                    hasLoadedPosts: true,
+                } );
+            }
+        } );
+    }
+
+    renderPostsBody() {
+        const postRows = this.state.posts.map( ( post, index ) => (
+            <Post
+                post={ post }
+                key={ index }
+            />
+        ) );
+
+        if ( ! this.state.hasLoadedPosts ) {
+            return <tbody />;
         }
+
+        if ( 0 === this.state.posts.length ) {
+            return (
+                <tbody>
+                    <tr className="crp-add-relations-feedback">
+                        <td colSpan="5">
+                            <em>{ __( 'No posts found.', 'custom-related-posts' ) }</em>
+                        </td>
+                    </tr>
+                </tbody>
+            );
+        }
+
+        return <tbody>{ postRows }</tbody>;
     }
 
 	render() {
@@ -117,14 +147,21 @@ class AddRelationModal extends Component {
                                 ) )
                             }
                         </select>
-                        <input
-                            autoFocus
-                            type="text"
-                            placeholder={ __( 'Start typing to search...' ) }
-                            className="crp-add-relations-search"
-                            value={ this.state.search }
-                            onChange={ this.onChangeSearch.bind(this) }
-                        />
+                        <div className="crp-add-relations-search-wrap">
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder={ __( 'Search posts...' ) }
+                                className="crp-add-relations-search"
+                                value={ this.state.search }
+                                onChange={ this.onChangeSearch.bind(this) }
+                            />
+                            { this.state.updatingPosts && (
+                                <span className="crp-add-relations-search-spinner">
+                                    <Spinner />
+                                </span>
+                            ) }
+                        </div>
                         <select
                             value={ this.state.searchType }
                             onChange={ this.onChangeSearchType.bind(this) }
@@ -134,40 +171,20 @@ class AddRelationModal extends Component {
                             <option value="id">{ __( 'Search by Post ID', 'custom-related-posts' ) }</option>
                         </select>
                     </div>
-                    <table className="crp-add-relations-posts">
-                        <thead>
-                            <tr>
-                                <th>{ __( 'Post Type' ) }</th>
-                                <th>{ __( 'Date' ) }</th>
-                                <th>{ __( 'Title' ) }</th>
-                                <th>{ __( 'Link' ) }</th>
-                            </tr>
-                        </thead>
-                        {
-                            0 === this.state.posts.length
-                            ?
-                            <tbody>
+                    <div className={ `crp-add-relations-results${ this.state.updatingPosts ? ' is-loading' : '' }` }>
+                        <table className="crp-add-relations-posts">
+                            <thead>
                                 <tr>
-                                    <td colSpan="4">
-                                        <em>No posts found.</em>
-                                    </td>
+                                    <th className="crp-add-relations-col-thumbnail">&nbsp;</th>
+                                    <th className="crp-add-relations-col-type">{ __( 'Type' ) }</th>
+                                    <th className="crp-add-relations-col-date">{ __( 'Date' ) }</th>
+                                    <th className="crp-add-relations-col-title">{ __( 'Title' ) }</th>
+                                    <th className="crp-add-relations-col-action">{ __( 'Link' ) }</th>
                                 </tr>
-                            </tbody>
-                            :
-                            <tbody>
-                                {
-                                    this.state.posts.map( (post, index) => {
-                                        return (
-                                            <Post
-                                                post={post}
-                                                key={index}
-                                            />
-                                        )
-                                    })
-                                }
-                            </tbody>
-                        }
-                    </table>
+                            </thead>
+                            { this.renderPostsBody() }
+                        </table>
+                    </div>
                 </div>
             </Modal>
         );

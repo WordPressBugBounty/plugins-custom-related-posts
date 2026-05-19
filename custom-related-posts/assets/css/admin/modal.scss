@@ -1,37 +1,254 @@
 .crp-add-relations-modal {
-    width: 100%;
+    box-sizing: border-box;
+    width: calc(100vw - 32px);
+    max-width: 1040px;
+
+    .components-modal__content {
+        display: flex;
+        flex-direction: column;
+        padding-bottom: 24px;
+    }
+
+    .crp-add-relations {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+    }
 
     .crp-add-relations-input {
         display: flex;
-        align-items: center;
-        gap: 5px;
+        align-items: stretch;
+        flex: 0 0 auto;
+        gap: 8px;
+        flex-wrap: wrap;
+
+        select,
+        .crp-add-relations-search {
+            height: 36px;
+            line-height: 1.4;
+            margin: 0;
+        }
 
         select {
             min-width: 150px;
         }
 
+        .crp-add-relations-search-wrap {
+            position: relative;
+            flex: 1 1 280px;
+            display: flex;
+        }
+
         .crp-add-relations-search {
+            flex: 1 1 auto;
             width: 100%;
-            max-width: 300px;
+            max-width: none;
+            padding-right: 36px;
+        }
+
+        .crp-add-relations-search-spinner {
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            display: inline-flex;
+            pointer-events: none;
+
+            .components-spinner {
+                margin: 0;
+            }
+        }
+    }
+
+    .crp-add-relations-results {
+        flex: 0 0 auto;
+        height: 420px;
+        margin-top: 10px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        background: #fff;
+        transition: opacity 0.15s ease;
+
+        &.is-loading {
+            opacity: 0.5;
         }
     }
 
     .crp-add-relations-posts {
-        margin-top: 10px;
         width: 100%;
+        max-width: 100%;
+        margin-top: 0;
+        border-collapse: collapse;
+        table-layout: fixed;
 
         th {
             text-align: left;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #50575e;
+            white-space: nowrap;
+        }
 
-            &:nth-child(1) { width: 13%; }
-            &:nth-child(2) { width: 12%; }
-            &:nth-child(3) { width: 40%; }
-            &:nth-child(4) { width: 35%; }
+        th,
+        td {
+            box-sizing: border-box;
+            padding: 8px 12px;
+            vertical-align: middle;
+        }
+
+        td {
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .crp-add-relations-col-thumbnail {
+            width: 60px;
+            padding-right: 0;
+
+            img,
+            .crp-add-relations-thumbnail-placeholder {
+                display: block;
+                width: 40px;
+                height: 40px;
+                border-radius: 4px;
+                object-fit: cover;
+                background: #f0f0f1;
+            }
+
+            .crp-add-relations-thumbnail-placeholder {
+                border: 1px dashed #dcdcde;
+                box-sizing: border-box;
+            }
+        }
+
+        .crp-add-relations-col-type {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 96px;
+            color: #50575e;
+        }
+
+        .crp-add-relations-col-date {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 124px;
+            color: #50575e;
+        }
+
+        .crp-add-relations-col-title {
+            width: auto;
+            overflow-wrap: anywhere;
+
+            a {
+                display: block;
+                max-width: 100%;
+                overflow-wrap: anywhere;
+                white-space: normal;
+                vertical-align: middle;
+            }
+        }
+
+        .crp-add-relations-col-action {
+            width: 188px;
+            white-space: nowrap;
+            text-align: right;
+        }
+
+        .crp-add-relations-row {
+            &:hover {
+                background-color: #f6f7f7;
+            }
+
+            &:last-child td {
+                border-bottom: none;
+            }
+        }
+
+        .crp-add-relations-feedback td {
+            padding: 32px 12px;
+            text-align: center;
+            color: #50575e;
+        }
+
+        .crp-add-relations-button {
+            &.components-button {
+                padding: 4px 10px;
+                height: auto;
+                min-height: 0;
+                font-size: 12px;
+                line-height: 1.4;
+            }
         }
 
         .crp-add-relations-button-to,
         .crp-add-relations-button-both {
             margin-right: 3px;
+        }
+    }
+}
+
+@media screen and (max-width: 782px) {
+    .crp-add-relations-modal {
+        width: calc(100vw - 24px);
+
+        .crp-add-relations {
+            min-height: 0;
+        }
+
+        .crp-add-relations-results {
+            height: auto;
+            min-height: 300px;
+            max-height: calc(100vh - 240px);
+        }
+
+        .crp-add-relations-posts {
+            th,
+            td {
+                padding: 8px;
+            }
+
+            .crp-add-relations-col-thumbnail,
+            .crp-add-relations-col-date {
+                display: none;
+            }
+
+            .crp-add-relations-col-type {
+                width: 84px;
+            }
+
+            .crp-add-relations-col-action {
+                width: 168px;
+            }
+        }
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .crp-add-relations-modal {
+        .crp-add-relations-posts {
+            .crp-add-relations-col-type {
+                display: none;
+            }
+
+            .crp-add-relations-col-action {
+                width: 154px;
+            }
+
+            .crp-add-relations-button {
+                &.components-button {
+                    padding-right: 8px;
+                    padding-left: 8px;
+                }
+            }
         }
     }
 }

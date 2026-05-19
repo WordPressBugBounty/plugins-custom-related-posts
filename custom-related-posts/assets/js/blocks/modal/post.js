@@ -28,33 +28,41 @@ function Post( props ) {
 	}
 
 	return (
-		<tr>
-			<td>{ post.post_type }</td>
-			<td>{ post.date_display }</td>
-			<td><a href={ post.permalink} target="_blank">{ post.title }</a></td>
-			<td>
+		<tr className="crp-add-relations-row">
+			<td className="crp-add-relations-col-thumbnail">
+				{ post.thumbnail ? (
+					<img src={ post.thumbnail } alt="" />
+				) : (
+					<span className="crp-add-relations-thumbnail-placeholder" aria-hidden="true" />
+				) }
+			</td>
+			<td className="crp-add-relations-col-type">{ post.post_type }</td>
+			<td className="crp-add-relations-col-date">{ post.date_display }</td>
+			<td className="crp-add-relations-col-title"><a href={ post.permalink} target="_blank">{ post.title }</a></td>
+			<td className="crp-add-relations-col-action">
 				{
 					'both' === linked
 					?
 					<Button
+						className="crp-add-relations-button"
 						variant="secondary"
 						disabled={true}
 					>{ __( 'Already linked' ) }</Button>
 					:
 					<Fragment>
 						<Button
-							className="crp-add-relations-button-to"
+							className="crp-add-relations-button crp-add-relations-button-to"
 							variant="secondary"
 							disabled={ false !== linked }
 							onClick={ () => props.onAddRelationTo( orderedPost ) }
 						>{ __( 'To' ) }</Button>
 						<Button
-							className="crp-add-relations-button-both"
+							className="crp-add-relations-button crp-add-relations-button-both"
 							isPrimary={true}
 							onClick={ () => props.onAddRelationBoth( orderedPost ) }
 						>{ __( 'Both' ) }</Button>
 						<Button
-							className="crp-add-relations-button-from"
+							className="crp-add-relations-button crp-add-relations-button-from"
 							variant="secondary"
 							disabled={ false !== linked }
 							onClick={ () => props.onAddRelationFrom( orderedPost ) }

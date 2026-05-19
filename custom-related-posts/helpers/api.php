@@ -171,7 +171,7 @@ class CRP_Api {
 
     public function api_search( $request ) {
         $post_type = sanitize_key( $request['post_type'] );
-        $keyword = sanitize_text_field( $request['keyword'] );
+        $keyword = sanitize_text_field( (string) $request['keyword'] );
         $search_type = sanitize_text_field( $request['search_type'] );
 
         // Sanitize Post Type.
@@ -190,20 +190,24 @@ class CRP_Api {
             'perm' => 'readable', // Only return posts the current user can read,
         );
 
-        // Handle search type
-        switch ( $search_type ) {
-            case 'title':
-                // For title-only search, use a custom query parameter and filter
-                $args['crp_search_title'] = $keyword;
-                break;
-            case 'id':
-                // For ID search, use a custom query parameter and filter
-                $args['crp_search_id'] = $keyword;
-                break;
-            default:
-                // Default search in title and content
-                $args['s'] = $keyword;
-                break;
+        if ( '' === $keyword ) {
+            $args['ignore_sticky_posts'] = true;
+        } else {
+            // Handle search type
+            switch ( $search_type ) {
+                case 'title':
+                    // For title-only search, use a custom query parameter and filter
+                    $args['crp_search_title'] = $keyword;
+                    break;
+                case 'id':
+                    // For ID search, use a custom query parameter and filter
+                    $args['crp_search_id'] = $keyword;
+                    break;
+                default:
+                    // Default search in title and content
+                    $args['s'] = $keyword;
+                    break;
+            }
         }
 
         $args = apply_filters( 'crp_search_args', $args );
@@ -224,6 +228,15 @@ class CRP_Api {
 
                 $post_type = get_post_type_object( $post->post_type );
 
+                $thumbnail_url = '';
+                $thumbnail_id = get_post_thumbnail_id( $post->ID );
+                if ( $thumbnail_id ) {
+                    $thumbnail = wp_get_attachment_image_src( $thumbnail_id, 'thumbnail' );
+                    if ( $thumbnail ) {
+                        $thumbnail_url = $thumbnail[0];
+                    }
+                }
+
                 $posts[] = array(
                     'id' => $post->ID,
                     'title' => $post->post_title,
@@ -232,6 +245,7 @@ class CRP_Api {
                     'date' => $post->post_date,
                     'date_display' => mysql2date( "j M 'y", $post->post_date ),
                     'post_type' => $post_type->labels->singular_name,
+                    'thumbnail' => $thumbnail_url,
                 );
             }
         }

@@ -3,8 +3,8 @@ Contributors: BrechtVds
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=QG7KZMGFU325Y
 Tags: related posts, manual related posts, widget, custom post type
 Requires at least: 3.5
-Tested up to: 6.9
-Stable tag: 1.8.1
+Tested up to: 7.0
+Stable tag: 1.8.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,6 +49,9 @@ Please report security bugs found in the source code of the undefined plugin thr
 2. Add relations by searching for posts
 
 == Changelog ==
+= 1.8.2 =
+* Improvement: Add relations modal UI
+
 = 1.8.1 =
 * Improvement: Compatibility with Block Editor in iFrame
 * Fix: Additional check to make sure a logged in user can only see his own posts
@@ -144,6 +147,9 @@ Please report security bugs found in the source code of the undefined plugin thr
 * Very first version of this plugin
 
 == Upgrade notice ==
+= 1.8.2 =
+Update to ensure WordPress 6.3 compatibility
+
 = 1.8.1 =
 Security related fix and block editor improvements
 

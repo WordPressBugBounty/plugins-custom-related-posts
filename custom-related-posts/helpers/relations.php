@@ -178,7 +178,7 @@ class CRP_Relations {
 
     public function update_to( $post_id, $relations )
     {
-        $this->relations_from[$post_id] = $relations;
+        $this->relations_to[$post_id] = $relations;
         update_post_meta( $post_id, 'crp_relations_to', $relations );
     }
 
